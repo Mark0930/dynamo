@@ -1,12 +1,30 @@
 version: 0.2
-
 phases:
   install:
     commands:
-      - echo "installing"
+      - wget https://releases.hashicorp.com/terraform/0.11.10/terraform_0.11.10_linux_amd64.zip
+      - unzip terraform_0.11.10_linux_amd64.zip
+      - sudo mv terraform /bin
+      - rm terraform_0.11.10_linux_amd64.zip
+      - apt-get update
+  pre_build:
+   commands:
+      - echo "Searching for state bucket..."
+      - |
+        if aws s3api head-bucket --bucket "$environment-dynamo-remote-terraformstate" 2>/dev/null
+        then
+          echo "Bucket already exists..."
+        else
+          echo "Creating bucket..."
+          aws s3api create-bucket --bucket "$environment-dynamo-remote-terraformstate" --region eu-west-2 --create-bucket-configuration LocationConstraint=eu-west-2
+        fi
+      - |
   build:
     commands:
+      - cd scripts
       - echo "building"
+      - terraform init -backend-config="bucket=$environment-dynamo-remote-terraformstate" -backend-config="key=$environment-dynamo-remote-terraformstate.tfstate" -backend-config="region=eu-west-2" -backend-config="encrypt=true" -input=false
+      - terraform apply -input=false -auto-approve -var="environment=$environment"
   post_build:
     commands:
       - echo "post build"

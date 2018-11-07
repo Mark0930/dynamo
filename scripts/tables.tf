@@ -1,5 +1,5 @@
 resource "aws_dynamodb_table" "example" {
-  name           = "CoffeeShops"
+  name           = "${var.environment}-CoffeeShop"
   read_capacity  = 20
   write_capacity = 20
   hash_key       = "name"
